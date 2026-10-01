@@ -17,15 +17,21 @@ import glob
 import json
 from datetime import datetime
 
+from dotenv import load_dotenv
 from telethon import TelegramClient
 from telethon.tl.functions.contacts import SearchRequest
 from telethon.tl.types import Channel, Chat
 from telethon.errors import FloodWaitError
 
-# === Настройки ===
-API_ID = 33667515
-API_HASH = "015c4b0a519a296a489515512e57a2c1"
-SESSION = "my_session"
+load_dotenv()
+
+# === Настройки (секреты — только из .env) ===
+API_ID = os.getenv("TG_API_ID_1") or os.getenv("TG_API_ID")
+API_HASH = os.getenv("TG_API_HASH_1") or os.getenv("TG_API_HASH")
+SESSION = os.getenv("TG_SESSION_1") or os.getenv("TG_SESSION", "my_session")
+if not API_ID or not API_HASH:
+    sys.exit("❌ Нет TG_API_ID_1 / TG_API_HASH_1 в .env (см. .env.example)")
+API_ID = int(API_ID)
 
 DEFAULT_KEYWORDS = [
     # Google Ads прямые

@@ -46,13 +46,15 @@ for i in (1, 2):
     if api_id and api_hash:
         ACCOUNTS.append({"api_id": int(api_id), "api_hash": api_hash, "session": session})
 
-# Fallback: старые переменные / хардкод
-if not ACCOUNTS:
+# Fallback: старые переменные (без хардкода — только .env)
+if not ACCOUNTS and os.getenv("TG_API_ID") and os.getenv("TG_API_HASH"):
     ACCOUNTS = [
-        {"api_id": int(os.getenv("TG_API_ID", "33667515")),
-         "api_hash": os.getenv("TG_API_HASH", "8ebcfd3fef65327abe7e8cfc0921d902"),
+        {"api_id": int(os.getenv("TG_API_ID")),
+         "api_hash": os.getenv("TG_API_HASH"),
          "session": os.getenv("TG_SESSION", "my_session")},
     ]
+if not ACCOUNTS:
+    sys.exit("❌ Нет TG_API_ID_1 / TG_API_HASH_1 в .env (см. .env.example)")
 
 message_limit      = 1000
 participants_limit = 10000
