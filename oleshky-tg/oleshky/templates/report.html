@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Олешки — Telegram-моніторинг {{ generated[:10] }}</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--fg:#1d1d1b;--muted:#6b6b66;--line:#e2e2dd;--accent:#1f5fae;--bar:#3b78c4;
+  --ua:#1f5fae;--occ:#b3261e;--neu:#5f6b4e;--unk:#8a8a84;--warn:#9a6700;--warnbg:#fff6e0}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#20201e;--fg:#ecece8;--muted:#a3a39c;--line:#34342f;
+  --accent:#7fb0ef;--bar:#6c9fe0;--ua:#7fb0ef;--occ:#f08a80;--neu:#a9b896;--unk:#a3a39c;--warn:#e6b450;--warnbg:#2c2614}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.muted{color:var(--muted)}a{color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:700px){.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.meter{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:80px}.meter i{display:block;height:100%;background:var(--bar)}
+.post .meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line)}
+.side-ua{color:var(--ua);border-color:var(--ua)}.side-occupation{color:var(--occ);border-color:var(--occ)}
+.side-neutral{color:var(--neu);border-color:var(--neu)}.side-unknown{color:var(--unk)}
+.summary{font-weight:600;margin:6px 0}
+.text{white-space:pre-wrap;word-wrap:break-word;margin:6px 0 0}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.warn{background:var(--warnbg);border-color:var(--warn)}
+svg text{fill:var(--muted);font-size:10px}
+.chart{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Олешки — моніторинг Telegram</h1>
+<div class="muted">Згенеровано {{ generated }} (Київ){% if since_last %} · лише нове з минулого звіту{% endif %}
+  {% if period %} · період постів: {{ period[0] }} — {{ period[1] }}{% endif %}
+  {% if not masked %} · <b>⚠ без маскування — не поширювати</b>{% endif %}</div>
+
+<div class="kpis">
+  <div class="kpi"><b>{{ n_relevant }}</b>релевантних постів</div>
+  <div class="kpi"><b>{{ n_unique }}</b>унікальних (без репостів)</div>
+  <div class="kpi"><b>{{ n_channels }}</b>каналів із постами</div>
+  <div class="kpi"><b>{{ new_channels|length }}</b>нових каналів</div>
+  <div class="kpi"><b>{{ n_unsure }}</b>перевірити вручну</div>
+</div>
+
+<h2>Динаміка по днях</h2>
+{% if daily.bars %}
+<div class="card chart">
+<svg width="{{ [daily.width, 300]|max }}" height="140" role="img" aria-label="Кількість релевантних постів по днях">
+  {% for b in daily.bars %}<rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="var(--bar)" rx="1"><title>{{ b.day }}: {{ b.v }}</title></rect>{% endfor %}
+  <line x1="0" y1="120" x2="{{ daily.width }}" y2="120" stroke="var(--line)"/>
+  <text x="0" y="135">{{ daily.first }}</text>
+  <text x="{{ daily.width }}" y="135" text-anchor="end">{{ daily.last }}</text>
+  <text x="0" y="10">макс. {{ daily.max }}/день</text>
+</svg>
+</div>
+{% else %}<p class="muted">Немає даних.</p>{% endif %}
+
+<div class="grid2">
+<div><h2>За типом</h2>
+<table>{% set tmax = (by_type|map(attribute=1)|max) if by_type else 1 %}
+{% for name, v in by_type %}<tr><td>{{ name }}</td><td class="n">{{ v }}</td><td style="width:40%"><div class="meter"><i style="width:{{ (100*v/tmax)|round }}%"></i></div></td></tr>{% endfor %}
+</table></div>
+<div><h2>За стороною</h2>
+<table>{% set smax = (by_side|map(attribute=1)|max) if by_side else 1 %}
+{% for name, v in by_side %}<tr><td>{{ name }}</td><td class="n">{{ v }}</td><td style="width:40%"><div class="meter"><i style="width:{{ (100*v/smax)|round }}%"></i></div></td></tr>{% endfor %}
+</table></div>
+</div>
+
+{% macro post(p, full=false) %}
+<div class="card post">
+  <div class="meta">
+    <span>{{ p.date_kyiv }}</span>
+    <span>{{ p.channel }}</span>
+    <span class="tag side-{{ p.side }}">{{ side_labels.get(p.side, p.side) }}</span>
+    {% if p.type %}<span class="tag">{{ type_labels.get(p.type, p.type) }}</span>{% endif %}
+    {% if p.blockade_related %}<span class="tag">блокада</span>{% endif %}
+    {% if p.is_comment %}<span class="tag">коментар</span>{% endif %}
+    {% if p.views %}<span>👁 {{ p.views }}</span>{% endif %}
+    {% if p.repost_count %}<span>репостнули: {{ p.repost_count }}</span>{% endif %}
+    {% if p.link %}<a href="{{ p.link }}">{{ p.link }}</a>{% endif %}
+  </div>
+  {% if p.summary_masked %}<div class="summary">{{ p.summary_masked }}</div>{% endif %}
+  {% if full %}<div class="text">{{ p.text_masked }}</div>
+  {% else %}<details><summary>Текст посту</summary><div class="text">{{ p.text_masked }}</div></details>{% endif %}
+</div>
+{% endmacro %}
+
+<h2>Звернення і свідчення ({{ appeals|length }})</h2>
+{% for p in appeals %}{{ post(p, true) }}{% else %}<p class="muted">Немає.</p>{% endfor %}
+
+<h2>Блокада — топ за переглядами ({{ blockade|length }})</h2>
+{% for p in blockade %}{{ post(p) }}{% else %}<p class="muted">Немає.</p>{% endfor %}
+
+<h2>Нові канали з минулого звіту ({{ new_channels|length }})</h2>
+{% if new_channels %}
+<table><tr><th>Канал</th><th>Назва</th><th>Тип</th><th class="n">Учасників</th><th>Сторона</th><th class="n">Постів</th><th>Знайдено через</th></tr>
+{% for c in new_channels %}<tr><td><a href="https://t.me/{{ c.username }}">@{{ c.username }}</a></td><td>{{ c.title }}</td><td>{{ c.type }}</td>
+<td class="n">{{ c.participants or '' }}</td><td><span class="tag side-{{ c.side }}">{{ side_labels.get(c.side, c.side) }}</span></td><td class="n">{{ c.posts_matched }}</td><td class="muted">{{ c.found_via }}</td></tr>{% endfor %}
+</table>
+{% else %}<p class="muted">Немає.</p>{% endif %}
+
+<h2>Перевірити вручну ({{ manual|length }})</h2>
+<p class="muted">Неоднозначні збіги («Алешки» як ім'я), невпевнені відповіді LLM або цитата, якої немає в тексті.
+Якщо канал точно релевантний — додай його в <code>config/channel_labels.csv</code>.</p>
+{% for p in manual %}
+<div class="card post warn">
+  <div class="meta"><span>{{ p.date_kyiv }}</span><span>{{ p.channel }}</span><span class="tag">{{ p.unsure_reason }}</span>
+  {% if p.link %}<a href="{{ p.link }}">{{ p.link }}</a>{% endif %}</div>
+  {% if p.summary_masked %}<div class="summary">{{ p.summary_masked }}</div>{% endif %}
+  <div class="text">{{ p.text_masked[:600] }}{% if p.text_masked|length > 600 %}…{% endif %}</div>
+</div>
+{% else %}<p class="muted">Немає.</p>{% endfor %}
+
+<p class="muted" style="margin-top:40px">Джерела — лише публічні Telegram-канали та групи. Автори в групах не зберігаються.
+Телефони, email та @username приватних акаунтів {% if masked %}замасковано{% else %}НЕ замасковано{% endif %}.</p>
+</main>
+</body>
+</html>
